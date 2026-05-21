@@ -6,3 +6,4 @@ ta
 plotly
 scipy
 textblob
+scikit-learn

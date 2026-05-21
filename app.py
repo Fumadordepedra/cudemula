@@ -25,17 +25,17 @@ st.markdown("""
 col_title, col_logo = st.columns([4, 1])
 with col_title:
     st.markdown("<h1>TERMINAL QUANT B3</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='color:#888;'>Fundo Quantitativo: Backtesting, Otimização de Portfólio (Markowitz) e Sentimento de IA</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color:#888;'>Fundo Quantitativo: Backtesting, Markowitz e ML Preditivo</p>", unsafe_allow_html=True)
 
 st.sidebar.markdown("### ⚙️ PARÂMETROS DO SCAN")
 selected_tickers_text = st.sidebar.text_area("Universo de Ações (Vírgula):", value=", ".join(get_b3_tickers()[:25]), height=150)
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("<div style='font-size: 0.8rem; color: #888;'><strong>PESOS DO SCORE (Max 100):</strong><br>• Técnica (Max 50)<br>• Fundamentos (Max 50)<br>• Sentimento IA (± 10)</div>", unsafe_allow_html=True)
+st.sidebar.markdown("<div style='font-size: 0.8rem; color: #888;'><strong>PESOS DO SCORE (Max 100):</strong><br>• Técnica (Max 50)<br>• Fundamentos (Max 50)<br>• Sentimento IA (± 10)<br>• Previsão ML (± 15)</div>", unsafe_allow_html=True)
 
 if 'results_pro' not in st.session_state: st.session_state['results_pro'] = None
 
-if st.sidebar.button("EXECUTAR SCAN"):
+if st.sidebar.button("EXECUTAR SCAN TOTAL"):
     raw_tickers = [t.strip().upper() for t in selected_tickers_text.split(",") if t.strip()]
     valid_tickers = [t if t.endswith(".SA") else f"{t}.SA" for t in raw_tickers]
     
@@ -44,13 +44,13 @@ if st.sidebar.button("EXECUTAR SCAN"):
     
     def on_progress(pct):
         progress_bar.progress(pct)
-        status_text.markdown(f"*Lendo Balanços, Extraindo Notícias, Rodando IA... {int(pct*100)}%*")
+        status_text.markdown(f"*Lendo Balanços, Extraindo Notícias, Treinando Redes Neurais... {int(pct*100)}%*")
         
     results = run_screener_pro(valid_tickers, progress_callback=on_progress)
     
     if results:
         st.session_state['results_pro'] = results
-        status_text.markdown("<span style='color:#00ff00'>✔ Scan Finalizado.</span>", unsafe_allow_html=True)
+        status_text.markdown("<span style='color:#00ff00'>✔ Varredura Quantitativa Finalizada.</span>", unsafe_allow_html=True)
     else:
         st.error("Falha ao obter dados.")
 
@@ -64,7 +64,7 @@ if st.session_state['results_pro']:
         
     df_results = pd.DataFrame(table_data)
     
-    tab1, tab2, tab3 = st.tabs(["RANKING INSTITUCIONAL", "DEEP DIVE (BACKTEST & IA)", "OTIMIZAÇÃO MARKOWITZ"])
+    tab1, tab2, tab3 = st.tabs(["RANKING INSTITUCIONAL", "DEEP DIVE (PREDIÇÃO & IA)", "OTIMIZAÇÃO MARKOWITZ"])
     
     with tab1:
         st.markdown("### Visão Geral do Mercado")
@@ -100,14 +100,21 @@ if st.session_state['results_pro']:
                 fig = create_candlestick_chart(selected_data['df'], selected_data['Ticker'])
                 st.plotly_chart(fig, use_container_width=True)
             with c2:
+                prob_alta = selected_data['Probabilidade Alta (IA)']
+                prob_color = "#00ff00" if prob_alta > 60 else "#ff0000" if prob_alta < 40 else "#ffb703"
+                
                 st.markdown(f"""
                 <div style='background-color:#111; padding:20px; border-radius:4px; border:1px solid #333;'>
                     <h2 style='margin-top:0; color:#fff;'>{selected_data['Ticker']}</h2>
                     <h3 style='color: {"#00ff00" if "BUY" in selected_data["Rating"] else "#ff0000" if "SELL" in selected_data["Rating"] else "#ff8c00"};'>{selected_data['Rating']}</h3>
                     <hr>
-                    <p style='margin:0;color:#888'>🤖 SENTIMENTO DAS NOTÍCIAS (IA)</p>
-                    <h3 style='margin:0;color:#fff'>{selected_data['Sentimento IA']} ({selected_data['Polaridade IA']})</h3>
+                    <p style='margin:0;color:#888'>🧠 PREDIÇÃO MACHINE LEARNING</p>
+                    <p style='margin:0;color:#ccc;font-size:12px;'>Prob. de subir nos próximos 5 dias:</p>
+                    <h1 style='margin:0;color:{prob_color}'>{prob_alta}%</h1>
                     <br>
+                    <p style='margin:0;color:#888'>🤖 SENTIMENTO DAS NOTÍCIAS (NLP)</p>
+                    <h3 style='margin:0;color:#fff'>{selected_data['Sentimento (Notícias)']}</h3>
+                    <hr>
                     <p style='margin:0;color:#888'>📊 BACKTESTING (12 Meses)</p>
                     <p style='margin:0;color:#fff'>Retorno Estratégia: <b style='color: {"#00ff00" if selected_data["Retorno Estratégia (%)"] > 0 else "#ff0000"};'>{selected_data['Retorno Estratégia (%)']}%</b></p>
                     <p style='margin:0;color:#fff'>Retorno Buy&Hold: <b style='color: {"#00ff00" if selected_data["Retorno 1A (%)"] > 0 else "#ff0000"};'>{selected_data['Retorno 1A (%)']}%</b></p>
@@ -147,7 +154,6 @@ if st.session_state['results_pro']:
                     """, unsafe_allow_html=True)
                     
                 with col_b:
-                    # Gráfico de Pizza Plotly
                     labels = list(port_stats['Alocação'].keys())
                     values = list(port_stats['Alocação'].values())
                     
@@ -162,4 +168,4 @@ if st.session_state['results_pro']:
                     st.plotly_chart(fig_pie, use_container_width=True)
 
 else:
-    st.info("👈 Insira os tickers e clique em EXECUTAR SCAN no painel lateral para iniciar o terminal.")
+    st.info("👈 Insira os tickers e clique em EXECUTAR SCAN TOTAL no painel lateral para iniciar.")
